@@ -1,15 +1,18 @@
 <script>
+  // Code adapted from
+  // https://codesandbox.io/s/donation-prototypes-voronoi-treemap-znnql
+  // By https://codesandbox.io/u/sabrinamochi
+
   import { hierarchy, range, scaleOrdinal } from "d3";
   import { nest } from "d3-collection";
   import { voronoiTreemap } from "d3-voronoi-treemap";
 
   export let data;
+  export let colorsDiverging;
 
   const nested = nest()
     .key((d) => d.group)
     .entries(data);
-
-  console.log("Nested Data: ", nested);
 
   const hier = hierarchy({ key: "group", values: nested }, (d) => d.values).sum(
     (d) => +d.expenditure
@@ -22,13 +25,19 @@
   // Colors
   const groupTypes = [...new Set(data.map((d) => d.group))];
   const colorScale = scaleOrdinal().domain(groupTypes).range([
-    "#297878", // NATO
-    "#ffffe0", // Others
+    colorsDiverging[9], // NATO
+    colorsDiverging[6], // Others
   ]);
   const specialColors = {
-    China: "#a54d15",
-    Russia: "#edc58d",
+    China: colorsDiverging[0],
+    India: colorsDiverging[1],
+    "Saudi Arabia": colorsDiverging[2],
+    Russia: colorsDiverging[3],
+    USA: colorsDiverging[10],
   };
+
+  console.log("Color Scale: ", specialColors);
+
   function colorHierarchy(h) {
     if (h.depth === 0) {
       h.color = "none";
@@ -56,8 +65,6 @@
     .descendants()
     .sort((a, b) => b.depth - a.depth)
     .map((d, i) => Object.assign({}, d, { id: i }));
-
-  // console.log("All Nodes: ", allNodes);
 </script>
 
 <div
@@ -77,7 +84,7 @@
               (node.parent ? node.parent.color : node.color)}
             stroke={node.data.group === "NATO" ? "white" : "black"}
           />
-          {#if node.polygon.site && node.data.pct_of_total > 0.01}
+          {#if node.polygon.site && node.data.pct_of_total > 0.021}
             <g
               transform={`translate(${node.polygon.site.x}, ${node.polygon.site.y - 5})`}
             >
@@ -86,7 +93,10 @@
                 y={0}
                 text-anchor="middle"
                 dominant-baseline="middle"
-                fill={node.data.group === "NATO" ? "white" : "black"}
+                fill={node.data.group === "NATO" ||
+                node.data.country === "China"
+                  ? "white"
+                  : "black"}
                 font-size="14px"
                 font-weight="bold"
               >
@@ -97,7 +107,10 @@
                 y={15}
                 text-anchor="middle"
                 dominant-baseline="middle"
-                fill={node.data.group === "NATO" ? "white" : "black"}
+                fill={node.data.group === "NATO" ||
+                node.data.country === "China"
+                  ? "white"
+                  : "black"}
                 font-size="14px"
               >
                 {(node.value / 1_000_000_000).toLocaleString("en-US", {
